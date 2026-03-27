@@ -1,8 +1,79 @@
 # Reproduced Performance
 
 Reproduction of published VLA model benchmark scores using vla-eval.
+Models listed in publication order.
 
-## Measurement Protocol
+## Summary
+
+| Model | LIBERO | CALVIN | SE WidowX | SE GR-VM | RoboTwin |
+|-------|:------:|:------:|:---------:|:--------:|:--------:|
+| Pi0.5 (Oct 2024) | **97.7%** (96.9%) Reproduced | — | — | — | — |
+| DB-CogACT (Nov 2024) | **95.2%** (94.9%) Reproduced | **4.05** (4.06) Reproduced | **72.2%** (69.5%) Reproduced | — | — |
+| OFT (Feb 2025) | 94.0% spatial only (~96.8%) | — | — | — | — |
+| GR00T N1.6 (Mar 2025) | **94.9%** (97.0%) Approximate | — | — | — | — |
+| X-VLA (Oct 2025) | **97.2%** (98.1%) Reproduced | — (4.43) | — (95.8%) | — (88.3%) | — (70.0%/39.0%) |
+
+Format: **reproduced** (reported) verdict. — = not yet evaluated.
+
+---
+
+## LIBERO
+
+4 suites × 10 tasks × 50 episodes = 2000 episodes/model. Seed=7.
+
+| Model | Spatial | Object | Goal | 10 | **Avg** | Reported | Verdict |
+|-------|:-------:|:------:|:----:|:--:|:-------:|:--------:|:-------:|
+| Pi0.5 | 98.0% | 99.6% | 98.6% | 94.6% | **97.7%** | 96.9% | Reproduced |
+| DB-CogACT | 95.2% | 98.6% | 95.2% | 89.6% | **95.2%** | 94.9% | Reproduced |
+| OFT (joint) | 94.0% | — | — | — | **—** | ~96.8% | Spatial only (−3.6pp) |
+| GR00T N1.6 | 96.6% | 98.4% | 96.8% | 87.8% | **94.9%** | 97.0% | Approximate (−2.1pp) |
+| X-VLA | 98.0% | 98.0% | 98.0% | 94.8% | **97.2%** | 98.1% | Reproduced |
+
+Raw result JSONs: [`data/`](data/).
+
+## CALVIN (ABC→D)
+
+1000 sequences × 5 chained subtasks, max 360 steps/subtask.
+
+| Model | Checkpoint | 1/5 | 2/5 | 3/5 | 4/5 | 5/5 | **Avg Len** | Reported | Verdict |
+|-------|-----------|:---:|:---:|:---:|:---:|:---:|:-----------:|:--------:|:-------:|
+| DB-CogACT | `Dexmal/calvin-db-cogact` | 93.3% | 86.3% | 81.5% | 75.6% | 68.4% | **4.05** | 4.06 | Reproduced |
+| X-VLA | `2toINF/X-VLA-Calvin-ABC_D` | — | — | — | — | — | **—** | 4.43 | — |
+
+## SimplerEnv — WidowX VM
+
+4 tasks × 24 episodes × 3 seeds = 288 episodes/model.
+
+| Model | Checkpoint | Spoon | Carrot | Block | Eggplant | **Avg** | Reported | Verdict |
+|-------|-----------|:-----:|:------:|:-----:|:--------:|:-------:|:--------:|:-------:|
+| DB-CogACT | `Dexmal/simpler-db-cogact` | 94.4% | 72.2% | 25.0% | 97.2% | **72.2%** | 69.5% | Reproduced |
+| GR00T N1.6 | `nvidia/GR00T-N1.6-bridge` | — | — | — | — | **—** | 62.1%† | — |
+| X-VLA | `2toINF/X-VLA-WidowX` | — | — | — | — | **—** | 95.8% | — |
+
+† GR00T reported on non-standard 7-task set; 4-task subset avg = 57.1%.
+
+## SimplerEnv — Google Robot VM
+
+3 tasks (Pick Coke Can, Move Near, Open/Close Drawer) × 24 episodes × 3 seeds.
+
+| Model | Checkpoint | Pick Coke | Move Near | Drawer | **3-task Avg** | Reported | Verdict |
+|-------|-----------|:---------:|:---------:|:------:|:--------------:|:--------:|:-------:|
+| GR00T N1.6 | `nvidia/GR00T-N1.6-fractal` | — | — | — | **—** | 67.7%† | — |
+| X-VLA | `2toINF/X-VLA-WidowX` | — | — | — | **—** | 88.3% | — |
+
+† GR00T reported on non-standard 6-task set. Not directly comparable.
+
+## RoboTwin
+
+50 tasks, Protocol A (single-task, 50 clean demos/task).
+
+| Model | Checkpoint | Easy | Hard | Reported Easy | Reported Hard | Verdict |
+|-------|-----------|:----:|:----:|:-------------:|:-------------:|:-------:|
+| X-VLA | `2toINF/X-VLA-WidowX` | — | — | 70.0% | 39.0% | — |
+
+---
+
+## Appendix A — Measurement Protocol
 
 **Hardware:**
 - Model server: H100-80GB SXM GPU
@@ -12,225 +83,233 @@ Reproduction of published VLA model benchmark scores using vla-eval.
 - Harness: vla-eval `main` branch
 - Docker: `ghcr.io/allenai/vla-evaluation-harness/{benchmark}:latest` (rebuilt per evaluation)
 
+**LIBERO protocol:** max_steps per suite: Spatial=220, Object=280, Goal=300, 10=520. num_steps_wait=10.
+
 **Verdict criteria** (binomial 95% CI):
 - **Reproduced**: within 95% CI of reported score.
 - **Approximate**: outside CI but ≤5pp gap.
 - **Not reproduced**: >5pp gap, or known systematic issue.
 
----
-
-## Stage 1 — LIBERO
-
-**Protocol:** 4 suites (Spatial, Object, Goal, 10) × 10 tasks × 50 episodes = 2000 episodes/model.
-Seed=7, num_steps_wait=10, max_steps per suite (Spatial=220, Object=280, Goal=300, 10=520).
-
-### Results
-
-Models listed in publication order.
-
-| Model | Spatial | Object | Goal | 10 | **Avg** | Reported | Verdict |
-|-------|:-------:|:------:|:----:|:--:|:-------:|:--------:|:-------:|
-| Pi0.5 (Oct 2024) | 98.0% | 99.6% | 98.6% | 94.6% | **97.7%** | 96.9% | Reproduced |
-| OFT (Feb 2025, joint) | 94.0% | — | — | — | **—** | ~96.8% | Spatial only (−3.6pp) |
-| GR00T N1.6 (Mar 2025) | 96.6% | 98.4% | 96.8% | 87.8% | **94.9%** | 97.0% | Approximate (−2.1pp) |
-| X-VLA (Oct 2025) | 98.0% | 98.0% | 98.0% | 94.8% | **97.2%** | 98.1% | Reproduced |
-
-Each value = successful episodes / total episodes (500 per suite).
-Raw result JSONs: [`data/`](data/).
-
-### Per-model Reproduction Notes
+## Appendix B — Per-model Notes
 
 **Pi0.5** (`pi05_libero` via openpi, [arxiv 2410.24164](https://arxiv.org/abs/2410.24164)):
 - Uses `states` (from `raw_obs`), 8D `[pos3, axisangle3, gripper2]`.
-- `send_wrist_image=True`, `send_state=True`. `image_resolution=224`.
-- Note: `pi0_fast_libero` is a different, lower-performing model.
+- `send_wrist_image=True`, `send_state=True`, `image_resolution=224`.
+- `pi0_fast_libero` is a different, lower-performing model.
+- CALVIN/SimplerEnv checkpoints not publicly available in openpi.
+
+**DB-CogACT** (CogACT fine-tune, [arxiv 2411.19650](https://arxiv.org/abs/2411.19650) / [arxiv 2510.23511](https://arxiv.org/abs/2510.23511)):
+- Separate checkpoint per benchmark. Full details: [db-cogact.md](db-cogact.md).
 
 **OFT** (`moojink/openvla-7b-oft-finetuned-libero-spatial-object-goal-10`, [arxiv 2502.19645](https://arxiv.org/abs/2502.19645)):
-- Joint checkpoint, requires per-suite `unnorm_key` — 4 server instances or 4 sequential runs.
+- Joint checkpoint, requires per-suite `unnorm_key` — 4 sequential runs.
 - `num_images_in_input=2` (3rd-person + wrist), `send_state=True`.
-- TF CUDA JIT on H100 takes 30+ min at startup. Ensure server is ready before launching shards.
-- Per-suite checkpoints (`moojink/openvla-7b-oft-finetuned-libero-{suite}`) show anomalous results
-  (spatial 92%, goal 18%) — likely HuggingFace checkpoint issues. Use joint checkpoint instead.
+- First startup is slow (model download + CUDA init). Confirm server ready before launching shards.
+- Per-suite checkpoints show anomalous results — use joint checkpoint only.
 
-**GR00T N1.6** (`0xAnkitSingh/GR00T-N1.6-LIBERO`, [arxiv 2503.14734](https://arxiv.org/abs/2503.14734)):
-- Community checkpoint; `invert_gripper=True`: model outputs gripper [0,1] (0=close), LIBERO expects [-1,1] (-1=open).
-- `embodiment_tag=LIBERO_PANDA`, `chunk_size=16`.
-- −2.1pp gap vs reported may be due to community checkpoint vs official NVIDIA finetuning.
+**GR00T N1.6** ([arxiv 2503.14734](https://arxiv.org/abs/2503.14734)):
+- LIBERO: `0xAnkitSingh/GR00T-N1.6-LIBERO` (community checkpoint), `invert_gripper=True`,
+  `embodiment_tag=LIBERO_PANDA`, `chunk_size=16`.
+  −2.1pp gap may be due to community vs official NVIDIA finetuning.
+- SimplerEnv WidowX: `nvidia/GR00T-N1.6-bridge`, `embodiment_tag=OXE_WIDOWX`.
+- SimplerEnv GR: `nvidia/GR00T-N1.6-fractal`, `embodiment_tag=OXE_GOOGLE`.
+- CALVIN/RoboTwin: no checkpoints available, no reported scores.
 
-**X-VLA** (`2toINF/X-VLA-Libero`, [arxiv 2510.10274](https://arxiv.org/abs/2510.10274)):
-- `benchmark_profile=libero`. Uses `controller_states` (from `robot.controller.ee_pos/ee_ori_mat`),
-  NOT `states` (from `raw_obs`). The observation quaternion (`robot0_eef_quat`) differs from the
-  controller rotation matrix by ~90° due to coordinate frame differences. X-VLA was trained on
-  controller data; using observation data yields 42%. See commit `27e63c0`.
-- `unflip_wrist=True`: benchmark flips all images; X-VLA was trained with unflipped wrist.
-- `absolute_action=True`: X-VLA outputs absolute EE poses, not deltas.
-- All params auto-negotiated via HELLO (`get_observation_params()`).
+**X-VLA** ([arxiv 2510.10274](https://arxiv.org/abs/2510.10274)):
+- LIBERO: `2toINF/X-VLA-Libero`, `benchmark_profile=libero`. Uses `controller_states`
+  (NOT `states`) — observation quaternion differs from controller rotation by ~90°.
+  Using observation data yields 42%. `unflip_wrist=True`, `absolute_action=True`.
+  All params auto-negotiated via HELLO.
+- CALVIN: `2toINF/X-VLA-Calvin-ABC_D`, `benchmark_profile=calvin`, `domain_id=2`, `chunk_size=20`.
+  Config ready: `configs/model_servers/xvla/calvin.yaml`.
+- SimplerEnv: `2toINF/X-VLA-WidowX`, `benchmark_profile=simpler`. Config needed.
+- RoboTwin: `benchmark_profile=robotwin` supported in model server. Config needed.
 
 ### Excluded Models
 
 | Model | Reason |
 |-------|--------|
-| StarVLA Q2.5-OFT/Q3-OFT/Q2.5-FAST | Supply <7 obs/s (chunk_size=1). Single shard: 4-20 hours. |
-| StarVLA Q2.5-GR00T | Supply 38 obs/s but still slow. Partial result: 29.6% spatial (reported 95.4%). |
-| StarVLA Qwen3-PI | state_dict mismatch: 36 vs 16 DiT transformer blocks. Server crash. |
+| StarVLA Q2.5-OFT/Q3-OFT/Q2.5-FAST | Supply <7 obs/s (chunk_size=1). 4-20 hours per suite. |
+| StarVLA Q2.5-GR00T | Partial: 29.6% spatial (reported 95.4%). |
+| StarVLA Qwen3-PI | state_dict mismatch (36 vs 16 transformer blocks). |
 | OpenVLA base (LoRA) | chunk_size=1, no batch prediction. ~3 hours per suite. |
 
-### Bugs Found During Reproduction
+### Bugs Found
 
 | Bug | Impact | Fix |
 |-----|--------|-----|
-| `raw_obs["robot0_eef_quat"]` ≠ `robot.controller.ee_ori_mat` (~90° frame diff) | X-VLA 42% → 98% | Benchmark sends both; X-VLA reads `controller_states` |
-| StarVLA gripper polarity `2x-1` inverted | Gripper open/close swapped | Changed to `1-2x` |
-| GR00T missing gripper normalization/inversion | ~1% success | Added `invert_gripper` flag |
-| OFT `num_images_in_input=1` (should be 2) | Missing wrist image | Fixed in `_base.yaml` |
-| Pi0 default `pi0_fast_libero` (wrong model) | Wrong checkpoint loaded | Changed to `pi05_libero` |
-| Smoke test `success` check broken after metrics refactor | All smoke tests failing | Fixed to read `metrics.success` |
-| Shard merge dropped `server_info`, `harness_version`, `created_at` | Provenance lost | Fixed in `merge.py` |
-| Port conflicts: multiple servers on same port | OFT evaluated against wrong models | Run models sequentially, verify ports |
+| `raw_obs` quat ≠ `controller` rotation (~90° frame diff) | X-VLA 42% → 98% | Benchmark sends both; X-VLA reads `controller_states` |
+| StarVLA gripper polarity inverted | Open/close swapped | `1-2x` instead of `2x-1` |
+| GR00T missing gripper normalization | ~1% success | Added `invert_gripper` flag |
+| OFT `num_images_in_input=1` (should be 2) | Missing wrist image | Fixed config |
+| Pi0 wrong default config | Wrong checkpoint | Changed to `pi05_libero` |
+| Port conflicts across models | Wrong model evaluated | Run sequentially, verify ports |
 
----
+## Appendix C — Supply & Demand
 
-## Stage 2 — Cross-benchmark
-
-### Overview
-
-Models listed in publication order.
-
-| Model | LIBERO | CALVIN | SE WidowX | SE GR-VM | RoboTwin |
-|-------|:------:|:------:|:---------:|:--------:|:--------:|
-| GR00T N1.6 (Mar 2025) | 94.9% | — | — | — | — |
-| X-VLA (Oct 2025) | 97.2% | — | — | — | — |
-| DB-CogACT (Oct 2025) | 95.2% | 4.05 avg len | 72.2% | — | — |
-
-LIBERO column from Stage 1. DB-CogACT details: [db-cogact.md](db-cogact.md).
-
-### CALVIN (ABC→D)
-
-**Protocol:** 1000 sequences × 5 chained subtasks, max 360 steps/subtask.
-Docker: `ghcr.io/allenai/vla-evaluation-harness/calvin:latest`.
-Config: `configs/calvin_eval.yaml`.
-Demand: Peak λ=407 obs/s at N=24 (CPU-bottlenecked).
-
-| Model | Checkpoint | Config | 1/5 | 2/5 | 3/5 | 4/5 | 5/5 | **Avg Len** | Reported | Verdict |
-|-------|-----------|--------|:---:|:---:|:---:|:---:|:---:|:-----------:|:--------:|:-------:|
-| X-VLA | `2toINF/X-VLA-Calvin-ABC_D` | `xvla/calvin.yaml` | — | — | — | — | — | **—** | 4.43 | — |
-| DB-CogACT | `Dexmal/calvin-db-cogact` | `db_cogact/calvin.yaml` | 93.3% | 86.3% | 81.5% | 75.6% | 68.4% | **4.05** | 4.06 | Reproduced |
-
-**X-VLA notes:**
-- Checkpoint: `2toINF/X-VLA-Calvin-ABC_D`, `benchmark_profile=calvin`, `domain_id=2`.
-- `chunk_size=20`, flow matching with `denoising_steps=10`.
-- Uses predicted proprio (closed-loop), `send_wrist_image=True`, `send_state=True`.
-- Config ready: `configs/model_servers/xvla/calvin.yaml`.
-
-### SimplerEnv — WidowX VM
-
-**Protocol:** 4 tasks × 24 episodes × 3 seeds (0, 2, 4) = 288 episodes/model.
-Docker: `ghcr.io/allenai/vla-evaluation-harness/simpler:latest`.
-Config: `configs/simpler_all_tasks.yaml`.
-Demand: Peak λ=138 obs/s at N=24 (GPU-bottlenecked).
-
-| Model | Checkpoint | Config | Spoon | Carrot | Block | Eggplant | **Avg** | Reported | Verdict |
-|-------|-----------|--------|:-----:|:------:|:-----:|:--------:|:-------:|:--------:|:-------:|
-| GR00T N1.6 | `nvidia/GR00T-N1.6-bridge` | config needed | — | — | — | — | **—** | 62.1%† | — |
-| X-VLA | `2toINF/X-VLA-WidowX` | config needed | — | — | — | — | **—** | 95.8% | — |
-| DB-CogACT | `Dexmal/simpler-db-cogact` | `db_cogact/simpler.yaml` | 94.4% | 72.2% | 25.0% | 97.2% | **72.2%** | 69.5% | Reproduced |
-
-† GR00T uses non-standard 7-task set (includes open/close drawer). 4-task subset avg = 57.1%.
-
-**GR00T N1.6 notes:**
-- Checkpoint: `nvidia/GR00T-N1.6-bridge`, `embodiment_tag=OXE_WIDOWX`.
-- Config needed: create `configs/model_servers/groot/simpler.yaml`.
-- Non-standard task set in official eval; we evaluate the standard 4-task subset.
-
-**X-VLA notes:**
-- Checkpoint: `2toINF/X-VLA-WidowX`, `benchmark_profile=simpler`.
-- Config needed: create `configs/model_servers/xvla/simpler.yaml` with `domain_id` TBD.
-
-### SimplerEnv — Google Robot VM
-
-**Protocol:** Standard 3-task (Pick Coke Can, Move Near, Open/Close Drawer) × 24 episodes × 3 seeds.
-Docker: `ghcr.io/allenai/vla-evaluation-harness/simpler:latest`.
-
-| Model | Checkpoint | Pick Coke | Move Near | Drawer | **3-task Avg** | Reported | Verdict |
-|-------|-----------|:---------:|:---------:|:------:|:--------------:|:--------:|:-------:|
-| GR00T N1.6 | `nvidia/GR00T-N1.6-fractal` | — | — | — | **—** | 67.7%† | — |
-| X-VLA | `2toINF/X-VLA-WidowX` | — | — | — | **—** | 88.3% (VM) | — |
-
-† GR00T uses non-standard 6-task set. Not directly comparable.
-
-**GR00T N1.6 notes:**
-- Checkpoint: `nvidia/GR00T-N1.6-fractal`, `embodiment_tag=OXE_GOOGLE`.
-
-### RoboTwin
-
-**Protocol:** 50 tasks, Protocol A (single-task, 50 clean demos/task).
-Docker: `ghcr.io/allenai/vla-evaluation-harness/robotwin:latest`.
-Config: `configs/robotwin_eval.yaml`.
-Demand: Peak λ=4.9 obs/s at N=16 (GPU-bottlenecked). Rec. 2 GPUs.
-
-| Model | Checkpoint | Easy | Hard | Reported Easy | Reported Hard | Verdict |
-|-------|-----------|:----:|:----:|:-------------:|:-------------:|:-------:|
-| X-VLA | `2toINF/X-VLA-WidowX` | — | — | 70.0% | 39.0% | — |
-
-**X-VLA notes:**
-- `benchmark_profile=robotwin`, `domain_id` TBD.
-- Config needed: create `configs/model_servers/xvla/robotwin.yaml`.
-- X-VLA model server already supports `robotwin` benchmark profile.
-- RoboTwin demand is very low (4.9 obs/s peak) — few shards needed.
-
----
-
-## Supply — Model Server Throughput
+### Supply — Model Server Throughput
 
 Measured with `experiments/bench_supply.py` on H100-80GB SXM.
 Command: `uv run python experiments/bench_supply.py --url ws://HOST:PORT --num-clients 4 --requests-per-client 60 --image-size 256`
 Observation payload: 2× 256×256 RGB images (agentview + wrist) + 8D state.
 All models at `max_batch_size=1` (no batching).
 
-| Model | chunk_size | μ (obs/s) | Median latency |
-|-------|:---------:|:---------:|:--------------:|
-| X-VLA | 30 | 88.8 | 30ms |
-| Pi0.5 | 10 | 84.0 | 63ms |
-| GR00T N1.6 | 16 | 46.5 | 50ms |
-| StarVLA Q2.5-GR00T | 1 | 38.3 | 60ms |
-| OFT (joint) | 10 | 27.1 | 46ms |
-| StarVLA Q2.5-OFT | 1 | 6.0 | 654ms |
-| StarVLA Q3-OFT | 1 | 5.9 | 664ms |
-| StarVLA Q2.5-FAST | 1 | 1.4 | 2858ms |
+| Model | chunk_size | μ (obs/s) | Median latency | GPU inf/s |
+|-------|:---------:|:---------:|:--------------:|:---------:|
+| Pi0.5 | 10 | 84.0 | 63ms | 8.4 |
+| DB-CogACT | 12 | 165.2 | 18ms | 13.8 |
+| OFT (joint) | 10 | 27.1 | 46ms | 2.7 |
+| GR00T N1.6 | 16 | 46.5 | 50ms | 2.9 |
+| StarVLA Q2.5-GR00T | 1 | 38.3 | 60ms | 38.3 |
+| StarVLA Q2.5-OFT | 1 | 6.0 | 654ms | 6.0 |
+| StarVLA Q3-OFT | 1 | 5.9 | 664ms | 5.9 |
+| StarVLA Q2.5-FAST | 1 | 1.4 | 2858ms | 1.4 |
+| X-VLA | 30 | 88.8 | 30ms | 3.0 |
 
-StarVLA/GR00T support `predict_batch()`. X-VLA/Pi0/OFT are single-predict only.
+GPU inf/s = actual GPU forward passes per second (μ / chunk_size). Models with chunk_size > 1
+serve most observations from cached action chunks without GPU inference.
 
-## Demand — Benchmark Observation Rate
+StarVLA/GR00T support `predict_batch()` — sweeping `max_batch_size` may improve throughput.
+X-VLA/Pi0/OFT are single-predict only (`max_batch_size=1`).
+DB-CogACT supports `predict_batch()` with optimal throughput at `max_batch_size=16` (468 obs/s on H100).
+
+<details>
+<summary>DB-CogACT batch sweep (chunk_size=12)</summary>
+
+**A100-80GB PCIe:**
+
+| B (max_batch_size) | μ (obs/s) | Inference latency (p50) |
+|:------------------:|:---------:|:-----------------------:|
+| 1 | 71.7 | 21.0ms |
+| 2 | 103.8 | 20.9ms |
+| 4 | 151.0 | 18.4ms |
+| 8 | 185.9 | 18.6ms |
+| 16 | 203.1 | 31.2ms |
+| 24 | 196.6 | 51.4ms |
+| 32 | 201.4 | 68.4ms |
+
+**H100-80GB SXM:**
+
+| B (max_batch_size) | μ (obs/s) | Inference latency (p50) |
+|:------------------:|:---------:|:-----------------------:|
+| 1 | 165.2 | 18.2ms |
+| 2 | 255.4 | 18.5ms |
+| 4 | 347.3 | 20.0ms |
+| 8 | 423.8 | 23.9ms |
+| 16 | 468.2 | 28.7ms |
+| 24 | 485.5 | 38.8ms |
+| 32 | 483.2 | 52.5ms |
+
+A100 peaks at B=16 (203 obs/s), H100 peaks at B=24 (486 obs/s). H100 achieves ~2.4× A100 throughput.
+
+</details>
+
+### Demand — Benchmark Observation Rate
 
 Measured with `experiments/bench_demand.py` on the benchmark host.
 Command: `uv run python experiments/bench_demand.py --config CONFIG --shards N --episodes-per-shard 5 --gpus G --timeout 300`
 Median CPU/GPU utilization during steady-state (startup transients excluded).
 
-Full per-N sweep data: see [`../tuning-guide.md`](../tuning-guide.md).
+| Benchmark | Rendering | Per-shard obs/s | Peak λ (obs/s) | Peak N | Bottleneck | 2 GPU effect | Rec. GPUs |
+|-----------|-----------|:---------------:|:--------------:|:------:|:----------:|:------------:|:---------:|
+| LIBERO | GPU EGL (MuJoCo) | ~7.3 | 415 | 50 | CPU (52%) | No change | 1 |
+| CALVIN | GPU EGL (PyBullet) | ~36.7 | 407 | 24 | CPU (93%) | No change | 1 |
+| SimplerEnv | GPU (SAPIEN/Vulkan) | ~10.1 | 138 | 24 | GPU (43%) | Worse (overhead) | 1 |
+| RoboTwin | GPU | TBD | 4.9 | 16 | GPU (100%) | 2× improvement | 2 |
 
-### Bottleneck Summary
+<details>
+<summary>LIBERO Spatial — λ(N) sweep</summary>
 
-| Benchmark | Peak λ (obs/s) | Peak N | Bottleneck | 2 GPU effect | Rec. GPUs |
-|-----------|:--------------:|:------:|:----------:|:------------:|:---------:|
-| LIBERO | 415 | 50 | CPU (52%) | No change | 1 |
-| CALVIN | 407 | 24 | CPU (93%) | No change | 1 |
-| SimplerEnv | 138 | 24 | GPU (43%) | Worse (overhead) | 1 |
-| RoboTwin | 4.9 | 16 | GPU (100%) | 2× improvement | 2 |
+| N (shards) | observations | elapsed (s) | λ (obs/s) |
+|:----------:|:------------:|:-----------:|:---------:|
+| 1 | 1,100 | 98.2 | 11.2 |
+| 8 | 8,800 | 106.2 | 82.9 |
+| 16 | 17,600 | 115.7 | 152.1 |
+| 24 | 26,400 | 123.2 | 214.2 |
+| 32 | 35,200 | 131.8 | 267.1 |
+| 50 | 55,000 | 150.8 | 364.6 |
+| 64 | 70,400 | 171.5 | 410.2 |
+| 80 | 88,000 | 196.8 | 446.8 |
+| 100 | 110,000 | 282.3 | 389.4 |
 
-## How to Run
+Peak at N=80 (447 obs/s). Per-shard throughput degrades from ~11.2 (N=1) to ~5.6 (N=80). At N=100, contention overwhelms parallelism.
+
+</details>
+
+<details>
+<summary>CALVIN ABC→D — λ(N) sweep</summary>
+
+| N (shards) | observations | elapsed (s) | λ (obs/s) |
+|:----------:|:------------:|:-----------:|:---------:|
+| 1 | 1,080 | 29.4 | 36.7 |
+| 4 | 4,320 | 36.7 | 117.6 |
+| 8 | 8,640 | 39.2 | 220.4 |
+| 16 | 17,280 | 46.0 | 376.0 |
+| 24 | 25,920 | 60.0 | 432.3 |
+| 32 | 34,560 | 87.6 | 394.6 |
+
+Peak at N=24 (432 obs/s). Fast PyBullet rendering (36.7 obs/s/shard at N=1) makes CALVIN supply-bottlenecked — demand exceeds estimated H100 supply (~283 obs/s) at just N=16.
+
+</details>
+
+<details>
+<summary>SimplerEnv WidowX — λ(N) sweep</summary>
+
+| N (shards) | observations | elapsed (s) | λ (obs/s) |
+|:----------:|:------------:|:-----------:|:---------:|
+| 1 | 2,400 | 238.4 | 10.1 |
+| 4 | 9,600 | 331.6 | 28.9 |
+| 8 | 19,200 | 272.6 | 70.4 |
+| 16 | 38,400 | 299.0 | 128.4 |
+| 24 | 42,825 | 298.1 | 143.7* |
+| 32 | 41,484 | 300.6 | 138.0* |
+
+\* timeout — partial results.
+Peak at N=24 (144 obs/s). SAPIEN/Vulkan shards consume much more GPU memory than MuJoCo/PyBullet EGL, so demand saturates far earlier than LIBERO/CALVIN.
+
+</details>
+
+**Key takeaways:**
+- LIBERO/CALVIN use lightweight GPU EGL rendering — scales to many shards, CPU-bottlenecked.
+- SimplerEnv (SAPIEN/Vulkan) saturates GPU earlier — adding shards past N=24 decreases throughput.
+- RoboTwin is heavily GPU-bottlenecked — 2 GPUs double throughput.
+- Use `num_shards` such that λ(N) < 80% of model server supply μ(B*). See tuning guide for derivation.
+
+### Recommended Shard Counts (LIBERO, H100)
+
+Rule: `num_shards ≤ 0.8 × μ / per_shard_demand`. LIBERO per-shard ≈ 7.3 obs/s.
+
+| Model | μ (obs/s) | Max shards (80% rule) | Recommended | Est. wall time |
+|-------|:---------:|:---------------------:|:-----------:|:--------------:|
+| X-VLA | 88.8 | 9 | 10 | ~30 min |
+| Pi0.5 | 84.0 | 9 | 10 | ~30 min |
+| GR00T | 46.5 | 5 | 5 | ~55 min |
+| StarVLA Q2.5-GR00T | 38.3 | 4 | 4 | ~70 min |
+| OFT | 27.1 | 3 | 4 | ~70 min |
+| StarVLA Q2.5-OFT | 6.0 | 0.6 | 1 | ~4.5 hrs |
+| StarVLA Q3-OFT | 5.9 | 0.6 | 1 | ~4.5 hrs |
+| StarVLA Q2.5-FAST | 1.4 | 0.15 | 1 | ~20 hrs |
+
+Models with μ < 7.3 obs/s cannot keep up with 1 shard — the single shard generates observations
+faster than the server processes them. Runs still work (queue absorbs bursts) but wall time is
+bottlenecked by inference speed, not parallelism.
+
+Full per-N sweep data and worked examples: [`../tuning-guide.md`](../tuning-guide.md).
+
+## Appendix D — How to Run
 
 ```bash
 # 1. Build Docker
 docker/build.sh libero
 
-# 2. Start model server (slurm, one per GPU)
+# 2. Start model server
 sbatch --gres=gpu:1 -c8 --mem=64G -t 24:00:00 \
   --wrap="uv run vla-eval serve -c configs/model_servers/xvla/libero.yaml --address 0.0.0.0:8001 -v"
 
 # 3. Wait for server ready
 curl -s --max-time 2 "http://GPU-NODE:8001/config"
 
-# 4. Run benchmark (ONE MODEL AT A TIME — shard filenames collide across models)
+# 4. Run sharded evaluation
 SHARDS=10  NODE=GPU-NODE  MODEL=xvla
 for i in $(seq 0 $((SHARDS-1))); do
   uv run vla-eval run -c configs/libero_all.yaml \
@@ -239,25 +318,23 @@ for i in $(seq 0 $((SHARDS-1))); do
 done
 wait
 
-# 5. Archive shards + merge
+# 5. Archive + merge
 mkdir -p docs/reproductions/data/${MODEL}-libero/shards
 cp results/LIBEROBenchmark_*shard*of${SHARDS}.json docs/reproductions/data/${MODEL}-libero/shards/
 uv run vla-eval merge results/LIBEROBenchmark_*_shard*of${SHARDS}.json \
   -o docs/reproductions/data/${MODEL}-libero/merged.json
 rm results/LIBEROBenchmark_*shard*of${SHARDS}.json
-
-# 6. Next model — clean shards before starting
 ```
 
-**Critical notes:**
-- Run ONE model at a time. Merge and clean shards before the next.
+**Notes:**
+- One model at a time. Merge and clean shards before starting the next.
 - Max 50 Docker containers on benchmark host.
 - Verify server port is free before launching (no stale servers on same port).
-- OFT: TF JIT takes 30+ min. Confirm server ready via `curl /config` before launching shards.
-- OFT joint: requires per-suite unnorm_key. Run 4 sequential passes, or 4 server instances on different ports.
+- OFT: first startup is slow (model download + CUDA init). Confirm server ready via `curl /config` before launching shards.
+- OFT joint: requires per-suite `unnorm_key`. Run 4 sequential passes, or 4 server instances on different ports.
 
 ## Reference
 
-- [reported-performance.md](reported-performance.md) — Officially reported scores from papers/model cards.
-- [db-cogact.md](db-cogact.md) — DB-CogACT cross-benchmark reproduction report.
-- [`../tuning-guide.md`](../tuning-guide.md) — Supply/demand measurement methodology.
+- [reported-performance.md](reported-performance.md) — Officially reported scores.
+- [db-cogact.md](db-cogact.md) — DB-CogACT cross-benchmark details.
+- [`../tuning-guide.md`](../tuning-guide.md) — Supply/demand methodology.
