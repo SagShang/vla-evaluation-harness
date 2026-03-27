@@ -85,7 +85,8 @@ Raw result JSONs: [`data/`](data/).
 
 **LIBERO protocol:** max_steps per suite: Spatial=220, Object=280, Goal=300, 10=520. num_steps_wait=10.
 
-**Verdict criteria** (binomial 95% CI):
+**Verdict criteria** (binomial 95% CI for 500 episodes per suite):
+- At p=0.95: CI ≈ ±1.9pp. At p=0.97: CI ≈ ±1.5pp.
 - **Reproduced**: within 95% CI of reported score.
 - **Approximate**: outside CI but ≤5pp gap.
 - **Not reproduced**: >5pp gap, or known systematic issue.
@@ -133,17 +134,6 @@ Raw result JSONs: [`data/`](data/).
 | StarVLA Q2.5-GR00T | Partial: 29.6% spatial (reported 95.4%). |
 | StarVLA Qwen3-PI | state_dict mismatch (36 vs 16 transformer blocks). |
 | OpenVLA base (LoRA) | chunk_size=1, no batch prediction. ~3 hours per suite. |
-
-### Bugs Found
-
-| Bug | Impact | Fix |
-|-----|--------|-----|
-| `raw_obs` quat ≠ `controller` rotation (~90° frame diff) | X-VLA 42% → 98% | Benchmark sends both; X-VLA reads `controller_states` |
-| StarVLA gripper polarity inverted | Open/close swapped | `1-2x` instead of `2x-1` |
-| GR00T missing gripper normalization | ~1% success | Added `invert_gripper` flag |
-| OFT `num_images_in_input=1` (should be 2) | Missing wrist image | Fixed config |
-| Pi0 wrong default config | Wrong checkpoint | Changed to `pi05_libero` |
-| Port conflicts across models | Wrong model evaluated | Run sequentially, verify ports |
 
 ## Appendix C — Supply & Demand
 
