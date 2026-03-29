@@ -52,6 +52,25 @@ from vla_eval.model_servers.predict import PredictModelServer
 logger = logging.getLogger(__name__)
 
 
+def _restore_logging(level: int) -> None:
+    """Undo starVLA's logging hijack.
+
+    starVLA's ``overwatch.py`` calls ``logging.config.dictConfig()`` with
+    ``disable_existing_loggers: True`` at import time, which sets
+    ``disabled = True`` on every pre-existing logger and replaces root
+    handlers with a ``RichHandler``.
+    """
+    # Restore root handler (dictConfig replaces it with RichHandler).
+    logging.basicConfig(
+        force=True, level=level,
+        format="%(asctime)s %(levelname)-8s %(name)s: %(message)s",
+    )
+    # Re-enable all loggers that dictConfig disabled.
+    for lg in logging.root.manager.loggerDict.values():
+        if isinstance(lg, logging.Logger):
+            lg.disabled = False
+
+
 class StarVLAModelServer(PredictModelServer):
     """Generic starVLA model server for all Qwen* frameworks."""
 
@@ -118,10 +137,12 @@ class StarVLAModelServer(PredictModelServer):
         if self._model is not None:
             return
         import torch
+
+        _saved_log_level = logging.getLogger().level
+
         from starVLA.model.framework.base_framework import baseframework
 
         ckpt_path = self._resolve_checkpoint(self.checkpoint)
-        logger.info("Loading starVLA model from checkpoint: %s", ckpt_path)
 
         # ------------------------------------------------------------------
         # Monkey-patches to work around upstream starVLA incompatibilities.
@@ -287,6 +308,9 @@ class StarVLAModelServer(PredictModelServer):
         if unnorm_key not in norm_stats:
             raise ValueError(f"unnorm_key={unnorm_key!r} not found, available: {list(norm_stats.keys())}")
         self._action_stats = norm_stats[unnorm_key]["action"]
+
+        # Restore logging after all starVLA operations are done.
+        _restore_logging(_saved_log_level)
         logger.info("Model loaded on %s (unnorm_key=%s)", device, unnorm_key)
 
     def get_observation_params(self) -> dict[str, Any]:
