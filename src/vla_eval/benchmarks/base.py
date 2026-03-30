@@ -92,6 +92,27 @@ class Benchmark(ABC):
 
     # -- optional overrides -----------------------------------------------
 
+    def get_action_spec(self) -> dict[str, Any]:
+        """Declare the action input format this benchmark's env consumes.
+
+        Returns a ``{component_name: DimSpec}`` dict.  Use ``accepts`` on
+        DimSpec to declare convertible formats (e.g. benchmark converts
+        axis-angle to euler internally).
+
+        Override in every subclass — the default raises ``NotImplementedError``.
+        """
+        raise NotImplementedError(f"{type(self).__name__} must override get_action_spec()")
+
+    def get_observation_spec(self) -> dict[str, Any]:
+        """Declare the observation output format this benchmark produces.
+
+        Returns a ``{component_name: DimSpec}`` dict describing what
+        ``get_observation()`` / ``make_obs()`` sends to the model server.
+
+        Override in every subclass — the default raises ``NotImplementedError``.
+        """
+        raise NotImplementedError(f"{type(self).__name__} must override get_observation_spec()")
+
     def get_metric_keys(self) -> dict[str, str]:
         """Declare which metrics from ``get_result()`` to aggregate.
 
