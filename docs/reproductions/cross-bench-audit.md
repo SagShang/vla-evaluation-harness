@@ -304,7 +304,7 @@ STATUS: Not reproduced (OLD Docker, not verified)
 ### Config
 - Server config: `configs/model_servers/xvla/calvin.yaml`
 - Benchmark config: `configs/calvin_eval.yaml`
-- Official eval: `/tmp/official-eval-code/xvla_calvin_client.py`
+- Official eval: X-VLA CALVIN eval script (external)
 
 ### Pipeline verification
 
@@ -385,7 +385,7 @@ STATUS: Not reproduced
 ### Config
 - Server config: `configs/model_servers/xvla/simpler_widowx.yaml`
 - Benchmark config: `configs/simpler_all_tasks.yaml`
-- Official eval: `/tmp/official-eval-code/xvla_simpler_widowx_client.py`
+- Official eval: X-VLA SimplerEnv WidowX eval script (external)
 
 ### Pipeline verification
 
@@ -466,7 +466,7 @@ STATUS: Not reproduced
 ### Config
 - Server config: `configs/model_servers/groot/simpler_widowx.yaml`
 - Benchmark config: `configs/simpler_all_tasks.yaml`
-- Official eval: `/tmp/official-eval-code/groot_simpler_eval.py` + `/tmp/official-eval-code/groot_bridge_modality.json`
+- Official eval: GR00T SimplerEnv eval script + bridge modality config (external)
 
 ### Pipeline verification
 
@@ -547,44 +547,44 @@ STATUS: Not reproduced
 ## References
 
 ### Model Servers
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/src/vla_eval/model_servers/xvla.py`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/src/vla_eval/model_servers/groot.py`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/src/vla_eval/model_servers/pi0.py`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/src/vla_eval/model_servers/oft.py`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/src/vla_eval/model_servers/dexbotic/cogact.py`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/src/vla_eval/model_servers/predict.py`
+- `src/vla_eval/model_servers/xvla.py`
+- `src/vla_eval/model_servers/groot.py`
+- `src/vla_eval/model_servers/pi0.py`
+- `src/vla_eval/model_servers/oft.py`
+- `src/vla_eval/model_servers/dexbotic/cogact.py`
+- `src/vla_eval/model_servers/predict.py`
 
 ### Benchmarks
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/src/vla_eval/benchmarks/libero/benchmark.py`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/src/vla_eval/benchmarks/calvin/benchmark.py`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/src/vla_eval/benchmarks/simpler/benchmark.py`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/src/vla_eval/benchmarks/libero/utils.py`
+- `src/vla_eval/benchmarks/libero/benchmark.py`
+- `src/vla_eval/benchmarks/calvin/benchmark.py`
+- `src/vla_eval/benchmarks/simpler/benchmark.py`
+- `src/vla_eval/benchmarks/libero/utils.py`
 
 ### Configs
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/configs/model_servers/xvla/libero.yaml`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/configs/model_servers/xvla/calvin.yaml`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/configs/model_servers/xvla/simpler_widowx.yaml`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/configs/model_servers/groot/libero.yaml`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/configs/model_servers/groot/simpler_widowx.yaml`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/configs/model_servers/pi0/libero.yaml`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/configs/model_servers/oft/libero_joint.yaml`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/configs/model_servers/db_cogact/libero.yaml`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/configs/model_servers/db_cogact/calvin.yaml`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/configs/model_servers/db_cogact/simpler.yaml`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/configs/libero_all.yaml`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/configs/calvin_eval.yaml`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/configs/simpler_all_tasks.yaml`
+- `configs/model_servers/xvla/libero.yaml`
+- `configs/model_servers/xvla/calvin.yaml`
+- `configs/model_servers/xvla/simpler_widowx.yaml`
+- `configs/model_servers/groot/libero.yaml`
+- `configs/model_servers/groot/simpler_widowx.yaml`
+- `configs/model_servers/pi0/libero.yaml`
+- `configs/model_servers/oft/libero_joint.yaml`
+- `configs/model_servers/db_cogact/libero.yaml`
+- `configs/model_servers/db_cogact/calvin.yaml`
+- `configs/model_servers/db_cogact/simpler.yaml`
+- `configs/libero_all.yaml`
+- `configs/calvin_eval.yaml`
+- `configs/simpler_all_tasks.yaml`
 
 ### Rotation Utilities
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/src/vla_eval/rotation.py`
+- `src/vla_eval/rotation.py`
 
-### Official Eval Code
-- `/tmp/official-eval-code/xvla_calvin_client.py`
-- `/tmp/official-eval-code/xvla_simpler_widowx_client.py`
-- `/tmp/official-eval-code/xvla_domain_config.py`
-- `/tmp/official-eval-code/groot_simpler_eval.py`
-- `/tmp/official-eval-code/groot_bridge_modality.json`
+### Official Eval Code (external, not in this repo)
+- X-VLA CALVIN client — from [2toINF/X-VLA](https://github.com/2toINF/X-VLA) evaluation scripts
+- X-VLA SimplerEnv WidowX client — same repo
+- X-VLA domain config — same repo
+- GR00T SimplerEnv eval — from [NVIDIA/Isaac-GR00T](https://github.com/NVIDIA/Isaac-GR00T) evaluation scripts
+- GR00T bridge modality config — same repo
 
 ### Infrastructure
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/src/vla_eval/orchestrator.py`
-- `/mnt/harbor/users/claude/GitHub/vla-evaluation-harness-allenai/src/vla_eval/model_servers/serve.py`
+- `src/vla_eval/orchestrator.py`
+- `src/vla_eval/model_servers/serve.py`
