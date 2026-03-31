@@ -118,6 +118,9 @@ def check_specs(
     # Action: server produces → benchmark consumes
     if server_action and bench_action and not (server_action.keys() & bench_action.keys()):
         warnings.append("action: no overlapping keys between server and benchmark specs")
+    for key in bench_action:
+        if key not in server_action and server_action:
+            warnings.append(f"action [{key}]: benchmark expects it but server doesn't declare it")
     for key in server_action.keys() & bench_action.keys():
         ok, reason = server_action[key].is_compatible(bench_action[key])
         if not ok:

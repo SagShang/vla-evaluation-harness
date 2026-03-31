@@ -11,7 +11,7 @@ from typing import Any
 import numpy as np
 
 from vla_eval.benchmarks.base import StepBenchmark, StepResult
-from vla_eval.specs import GRIPPER_CLOSE_NEG, IMAGE_RGB, LANGUAGE, POSITION_DELTA, RAW, ROTATION_EULER, DimSpec
+from vla_eval.specs import GRIPPER_CLOSE_POS, IMAGE_RGB, LANGUAGE, POSITION_DELTA, RAW, ROTATION_EULER, DimSpec
 from vla_eval.types import Action, EpisodeResult, Observation, Task
 
 
@@ -249,7 +249,7 @@ class SimplerEnvBenchmark(StepBenchmark):
         return {
             "position": POSITION_DELTA,
             "rotation": ROTATION_EULER,
-            "gripper": GRIPPER_CLOSE_NEG,
+            "gripper": GRIPPER_CLOSE_POS,
         }
 
     def get_observation_spec(self) -> dict[str, DimSpec]:

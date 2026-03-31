@@ -63,6 +63,7 @@ from vla_eval.specs import (
     POSITION_DELTA,
     RAW,
     ROTATION_AA,
+    ROTATION_EULER,
     STATE_ROT6D_PROPRIO_20D,
     DimSpec,
 )
@@ -123,6 +124,7 @@ _BENCHMARK_PROFILES: dict[str, _XVLABenchmarkProfile] = {
         use_predicted_proprio=True,
         gripper_threshold=0.5,
         gripper_close_above=True,
+        output_action_dim=7,
     ),
     "simpler_widowx": _XVLABenchmarkProfile(
         image_keys=("primary",),
@@ -380,7 +382,8 @@ class XVLAModelServer(PredictModelServer):
 
     def get_action_spec(self) -> dict[str, DimSpec]:
         if self.output_action_dim == 7:
-            return {"position": POSITION_DELTA, "rotation": ROTATION_AA, "gripper": GRIPPER_CLOSE_POS}
+            rotation = ROTATION_EULER if self._euler_offset is not None else ROTATION_AA
+            return {"position": POSITION_DELTA, "rotation": rotation, "gripper": GRIPPER_CLOSE_POS}
         return {"actions": RAW}
 
     def get_observation_spec(self) -> dict[str, DimSpec]:

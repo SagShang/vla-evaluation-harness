@@ -84,28 +84,22 @@ class Orchestrator:
         logger.info("Starting benchmark: %s (mode=%s)", name, cfg.mode)
 
         # Fail fast: claim the output path via file lock (shard mode).
-        # Prevents two evals with the same benchmark config + shard count
-        # from silently overwriting each other's results.
-        output_dir = Path(self.config.get("output_dir", "./results"))
-        output_dir.mkdir(parents=True, exist_ok=True)
         self._output_file_lock: FileLock | None = None
         if self.num_shards is not None and self.shard_id is not None:
+            output_dir = Path(self.config.get("output_dir", "./results"))
+            output_dir.mkdir(parents=True, exist_ok=True)
             safe_name = re.sub(r"[^\w\-.]", "_", name)
-            result_path = output_dir / f"{safe_name}_shard{self.shard_id}of{self.num_shards}.json"
-            if result_path.exists():
+            output_path = output_dir / f"{safe_name}_shard{self.shard_id}of{self.num_shards}.json"
+            if output_path.exists():
                 raise FileExistsError(
-                    f"Result file already exists: {result_path}\nRemove it or use a different output_dir."
+                    f"Result file already exists: {output_path}\nRemove it or use a different output_dir."
                 )
-            lock_path = output_dir / f"{safe_name}_shard{self.shard_id}of{self.num_shards}.json.lock"
-            lock = FileLock(lock_path, timeout=0)
+            lock = FileLock(str(output_path) + ".lock", timeout=0)
             try:
                 lock.acquire()
                 self._output_file_lock = lock
             except Timeout:
-                raise FileExistsError(
-                    f"Another evaluation is already writing to: {result_path}\n"
-                    "If this is stale, remove {lock_path} manually."
-                )
+                raise FileExistsError(f"Another eval is already writing to {output_path}")
 
         # Connect to model server FIRST to get observation requirements
         conn = Connection(self._server_cfg.url, timeout=self._server_cfg.timeout)
