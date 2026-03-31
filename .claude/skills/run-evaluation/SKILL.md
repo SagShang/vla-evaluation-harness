@@ -260,8 +260,7 @@ silently overwriting results.
 
 If you hit this error, either:
 - Use **different output directories** (modify `output_dir` in the config), or
-- Use **different shard counts** (e.g. `--num-shards 10` vs `--num-shards 8`), or
-- **Run sequentially** — finish one model, archive/remove results, then start the next.
+- Use **different shard counts** (e.g. `--num-shards 10` vs `--num-shards 8`).
 
 ### Troubleshooting
 
