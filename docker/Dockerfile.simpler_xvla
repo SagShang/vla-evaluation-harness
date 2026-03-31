@@ -1,0 +1,11 @@
+# SimplerEnv + X-VLA sink camera alignment
+# Extends simpler:latest with camera/init patches from 255isWhite/SimplerEnv fork.
+# Required for X-VLA WidowX sink tasks (PutEggplant).
+
+ARG BASE_IMAGE=ghcr.io/allenai/vla-evaluation-harness/simpler:latest
+FROM ${BASE_IMAGE}
+
+SHELL ["conda", "run", "-n", "simpler", "/bin/bash", "-c"]
+
+COPY docker/xvla_sink_camera.patch /tmp/xvla_sink_camera.patch
+RUN cd /app/ManiSkill2_real2sim && patch -p1 < /tmp/xvla_sink_camera.patch && rm /tmp/xvla_sink_camera.patch
