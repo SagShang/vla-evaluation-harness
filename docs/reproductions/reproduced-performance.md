@@ -8,7 +8,7 @@ Models listed in publication order.
 | Model | LIBERO | CALVIN | SE WidowX | SE GR-VM | RoboTwin |
 |-------|:------:|:------:|:---------:|:--------:|:--------:|
 | Pi0.5 (Oct 2024) | **97.7%** (96.9%) Reproduced | — | — | — | — |
-| DB-CogACT (Nov 2024) | **95.2%** (94.9%) Reproduced | **4.05** (4.06) Reproduced | **72.2%** (69.5%) Reproduced | — | — |
+| DB-CogACT (Nov 2024) | **94.7%** (94.9%) Reproduced | **4.02** (4.06) Reproduced | **70.8%** (69.5%) Reproduced | — | — |
 | OFT (Feb 2025) | 94.0% spatial only (~96.8%) | — | — | — | — |
 | GR00T N1.6 (Mar 2025) | **94.9%** (97.0%) Approximate | — | **36.5%** (62.1%) Approximate | — | — |
 | X-VLA (Oct 2025) | **97.8%** (98.1%) Reproduced | **4.30** (4.43) Reproduced | **69.8%** (95.8%) Partial | — (88.3%) | — (70.0%/39.0%) |
@@ -24,7 +24,7 @@ Format: **reproduced** (reported) verdict. — = not yet evaluated.
 | Model | Spatial | Object | Goal | 10 | **Avg** | Reported | Verdict |
 |-------|:-------:|:------:|:----:|:--:|:-------:|:--------:|:-------:|
 | [Pi0.5](../../configs/model_servers/pi0/libero.yaml) | 98.0% | 99.6% | 98.6% | 94.6% | **97.7%** | 96.9% | Reproduced |
-| [DB-CogACT](../../configs/model_servers/db_cogact/libero.yaml) | 95.2% | 98.6% | 95.2% | 89.6% | **95.2%** | 94.9% | Reproduced |
+| [DB-CogACT](../../configs/model_servers/db_cogact/libero.yaml) | 93.8% | 98.4% | 96.0% | 90.8% | **94.7%** | 94.9% | Reproduced |
 | [OFT (joint)](../../configs/model_servers/oft/libero_joint.yaml) | 94.0% | — | — | — | **—** | ~96.8% | Spatial only (−3.6pp) |
 | [GR00T N1.6](../../configs/model_servers/groot/libero.yaml) | 96.6% | 98.4% | 96.8% | 87.8% | **94.9%** | 97.0% | Approximate (−2.1pp) |
 | [X-VLA](../../configs/model_servers/xvla/libero.yaml) | 97.8% | — | — | — | **97.8%** | 98.1% | Reproduced (spatial) |
@@ -37,7 +37,7 @@ Raw result JSONs: [`data/`](data/).
 
 | Model | Checkpoint | 1/5 | 2/5 | 3/5 | 4/5 | 5/5 | **Avg Len** | Reported | Verdict |
 |-------|-----------|:---:|:---:|:---:|:---:|:---:|:-----------:|:--------:|:-------:|
-| [DB-CogACT](../../configs/model_servers/db_cogact/calvin.yaml) | `Dexmal/calvin-db-cogact` | 93.3% | 86.3% | 81.5% | 75.6% | 68.4% | **4.05** | 4.06 | Reproduced |
+| [DB-CogACT](../../configs/model_servers/db_cogact/calvin.yaml) | `Dexmal/calvin-db-cogact` | 93.3% | 86.3% | 80.5% | 74.4% | 67.8% | **4.02** | 4.06 | Reproduced |
 | [X-VLA](../../configs/model_servers/xvla/calvin.yaml) | `2toINF/X-VLA-Calvin-ABC_D` | 95.6% | 91.8% | 87.1% | 81.7% | 73.9% | **4.30** | 4.43 | Reproduced |
 
 ## SimplerEnv — WidowX VM
@@ -46,7 +46,7 @@ Raw result JSONs: [`data/`](data/).
 
 | Model | Checkpoint | Spoon | Carrot | Block | Eggplant | **Avg** | Reported | Verdict |
 |-------|-----------|:-----:|:------:|:-----:|:--------:|:-------:|:--------:|:-------:|
-| [DB-CogACT](../../configs/model_servers/db_cogact/simpler.yaml) | `Dexmal/simpler-db-cogact` | 94.4% | 72.2% | 25.0% | 97.2% | **72.2%** | 69.5% | Reproduced (3-seed) |
+| [DB-CogACT](../../configs/model_servers/db_cogact/simpler.yaml) | `Dexmal/simpler-db-cogact` | 100.0% | 50.0% | 33.3% | 100.0% | **70.8%** | 69.5% | Reproduced (seed 0) |
 | [GR00T N1.6](../../configs/model_servers/groot/simpler_widowx.yaml) | `nvidia/GR00T-N1.6-bridge` | 45.8% | 58.3% | 0.0% | 41.7% | **36.5%** | 62.1%† | Approximate (−20.6pp)‡ |
 | [X-VLA](../../configs/model_servers/xvla/simpler_widowx.yaml) | `2toINF/X-VLA-WidowX` | 91.7% | 91.7% | 29.2% | 66.7% | **69.8%** | 95.8% | Partial (−26pp) |
 
@@ -103,7 +103,8 @@ Raw result JSONs: [`data/`](data/).
 - CALVIN/SimplerEnv checkpoints not publicly available in openpi.
 
 **DB-CogACT** (CogACT fine-tune, [arxiv 2411.19650](https://arxiv.org/abs/2411.19650) / [arxiv 2510.23511](https://arxiv.org/abs/2510.23511)):
-- Separate checkpoint per benchmark. Full details: [db-cogact.md](db-cogact.md).
+- Separate checkpoint per benchmark (`Dexmal/{suite}-db-cogact`).
+- SimplerEnv requires `image_size` resize (224×224) via `get_observation_params()`.
 - Results: LIBERO [`data/dbcogact-libero/`](data/dbcogact-libero/),
   CALVIN [`data/dbcogact-calvin/`](data/dbcogact-calvin/),
   SimplerEnv [`data/dbcogact-simpler/`](data/dbcogact-simpler/).
@@ -339,5 +340,4 @@ rm results/LIBEROBenchmark_*shard*of${SHARDS}.json
 ## Reference
 
 - [reported-performance.md](reported-performance.md) — Officially reported scores.
-- [db-cogact.md](db-cogact.md) — DB-CogACT cross-benchmark details.
 - [`../tuning-guide.md`](../tuning-guide.md) — Supply/demand methodology.
