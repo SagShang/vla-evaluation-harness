@@ -1,12 +1,12 @@
 # Cross-Benchmark Pipeline Verification Audit
 
-**Date:** 2026-03-30
-**Branch:** `run-cross-benchmark-evals`
-**Scope:** All 10 model-benchmark pairs (Stage 1 + Cross-benchmark)
+**Date:** 2026-03-30 (updated 2026-04-01)
+**Branch:** `cross-bench-eval-v2`
+**Scope:** All 10 model-benchmark pairs (Stage 1 + Cross-benchmark) + 3 RoboTwin pairs
 
 ---
 
-## Pair 1: X-VLA x LIBERO — 97.2% (98.1%) Reproduced
+## Pair 1: X-VLA x LIBERO — 97.4% (98.1%) Reproduced
 
 STATUS: Reproduced
 
@@ -23,7 +23,7 @@ STATUS: Reproduced
 | **Image cameras** | agentview + wrist | agentview + wrist | Yes | xvla.py:86 `image_keys=("agentview", "wrist")`, benchmark.py:198,206 sends both; obs_params at xvla.py:126 sets `send_wrist_image: True` |
 | **State/proprio format** | controller [pos3, aa3, gripper2] -> 20D rot6d | controller [pos3, aa3, gripper2] -> 20D rot6d | Yes | benchmark.py:220-226 sends `controller_states` from `robot.controller.ee_pos/ee_ori_mat`; xvla.py:142 prefers `controller_states` over `states`; xvla.py:192-201 `_state_to_xvla_proprio` converts [pos3, aa3] to [pos3, rot6d6, 0, zeros10] |
 | **State source** | robot.controller (ee_pos, ee_ori_mat) | controller_states (same source) | Yes | benchmark.py:221-222 `robot.controller.ee_pos`, `robot.controller.ee_ori_mat`; xvla.py:142 `obs.get("controller_states")` |
-| **rot6d convention** | contiguous (model internal) | contiguous | Yes | xvla.py:65 imports `axisangle_to_rot6d_contiguous`, xvla.py:68 `rot6d_contiguous_to_matrix`; rotation.py:80-87 contiguous = `mat[:,:2].T.flatten()` i.e. [col0, col1] |
+| **rot6d convention** | contiguous (model internal) | contiguous (profile-level) | Yes | xvla.py `rot6d_convention="contiguous"` in libero profile; selected at init time from `_rot6d_to_matrix_contig` / `_axisangle_to_rot6d_contig`; rotation.py:80-87 contiguous = `mat[:,:2].T.flatten()` i.e. [col0, col1] |
 | **Action dimension** | 20D raw -> 7D converted | 20D raw -> 7D converted | Yes | xvla.py:89 `output_action_dim=7`; xvla.py:377-378 `_convert_ee6d_to_7d` extracts arm-1 from 20D |
 | **Rotation output** | rot6d -> axis-angle | rot6d -> axis-angle | Yes | xvla.py:186 `_rot6d_to_axisangle(actions[i, 3:9])` converts contiguous rot6d to axis-angle via matrix->quat->axisangle |
 | **Euler offset** | none | none | Yes | N/A for LIBERO (no coordinate frame mismatch) |
@@ -459,9 +459,9 @@ STATUS: Not reproduced
 
 ---
 
-## Pair 10: GR00T x SimplerEnv WidowX — 25% (57.1%) Not reproduced
+## Pair 10: GR00T x SimplerEnv WidowX — 30.2% (62.1%) Partial
 
-STATUS: Not reproduced
+STATUS: Partial
 
 ### Config
 - Server config: `configs/model_servers/groot/simpler_widowx.yaml`
@@ -474,8 +474,8 @@ STATUS: Not reproduced
 |------|----------|------|:------:|----------|
 | **Image resolution** | 256x256 (WidowXBridgeEnv) | 256x256 | Yes | Official (groot_simpler_eval.py:244): `image_size: (256, 256)` for widowx envs. Ours: simpler_widowx.yaml:8 `image_resolution: 256`; groot.py:173-176 resizes to 256x256 |
 | **Image cameras** | video.image_0 (single) | primary (single, auto-detected) | Yes | Official (groot_bridge_modality.json:66-68): `"image_0"` video key. Ours: modality config from checkpoint provides video keys; groot.py:160-161 uses modality config |
-| **State/proprio format** | 8D [x, y, z, roll, pitch, yaw, pad, gripper] with bridge rotation conversion | NO state sent (SimplerEnv has no send_state) | MISMATCH | Official (groot_simpler_eval.py:192-207): `_process_observation` extracts `eef_pos`, computes `rpy_bridge_converted = te.mat2euler(rm_bridge @ self.default_rot.T)` where `default_rot = [[0,0,1],[0,1,0],[-1,0,0]]`. State is [x, y, z, roll', pitch', yaw', 0, gripper]. Ours: SimplerEnv benchmark.py has no send_state; `_build_obs_dict` (line 121-123) only sends image + task. groot.py:195-196 sets zeros for state: `observation["state"][sk] = np.zeros((B, 1, dim))` |
-| **State source** | agent/eef_pos with bridge rotation correction | none (zeros) | MISMATCH | Official uses `obs["agent"]["eef_pos"]` with `quat2mat(quat) @ default_rot.T` rotation correction. Ours sends no state. |
+| **State/proprio format** | 8D [x, y, z, roll, pitch, yaw, pad, gripper] with bridge rotation conversion | 8D base-relative EE pose + bridge rotation | Yes | **FIXED**: benchmark.py computes `inv(base_mat) @ tcp_mat` for base-relative pose, groot.py applies bridge rotation `quat_to_matrix(xyzw) @ default_rot.T → euler`. `tcp_pose == ee_gripper_link` confirmed in Docker. |
+| **State source** | agent/eef_pos (NVIDIA ManiSkill2 fork) | base_pose + tcp_pose (base-relative computation) | Yes | **FIXED**: NVIDIA fork adds `eef_pos` via `inv(base_pose) @ ee_pose`. Our benchmark computes identical transform from `base_pose` + `tcp_pose`. Gripper openness via `get_gripper_closedness()`. |
 | **rot6d convention** | N/A (GR00T handles internally) | N/A | N/A | GR00T handles internally |
 | **Action dimension** | 7D [x, y, z, roll, pitch, yaw, gripper] | 7D (concatenated action keys) | Yes | Official (groot_bridge_modality.json:38-65): 7 action keys. Ours: groot.py:215-216 concatenates action keys |
 | **Rotation output** | euler (model native for bridge) | euler (model native) | Yes | GR00T outputs in the format defined by its modality config |
@@ -486,44 +486,40 @@ STATUS: Not reproduced
 | **Action mode** | delta (WidowX default) | delta | Yes | Both use WidowX default delta control |
 | **chunk_size** | 16 (GR00T default) | 16 | Yes | simpler_widowx.yaml:8 `chunk_size: 16` |
 | **action_ensemble** | newest | newest | Yes | groot.py:57 default |
-| **max_steps / EP_LEN** | 10000 (env._max_episode_steps override) | 120 | MISMATCH | Official (groot_simpler_eval.py:126): `env._max_episode_steps = 10000`. Ours: simpler_all_tasks.yaml:31 `max_episode_steps: 120`. Official allows ~83x more steps. |
+| **max_steps / EP_LEN** | 504 (MultiStepWrapper default) | 300 (benchmark config) | MISMATCH | Official: `MultiStepConfig(max_episode_steps=504)`. Inner env has `_max_episode_steps=10000` (unlimited). Ours: benchmark config sets 300. **Remaining gap.** |
+| **n_action_steps** | 8 (MultiStepWrapper) | 16 (chunk_size) | MISMATCH | Official uses first 8 of 16 predicted actions, re-infers every 8 steps. Ours uses all 16, re-infers every 16 steps. **Remaining gap — needs chunk_size=8.** |
+| **accumulate_success** | OR-accumulated across episode | OR-accumulated | Yes | **FIXED**: `accumulate_success=True` in GR00T obs_params; benchmark tracks `_success_seen` flag. |
+| **rgb_overlay** | none (WidowXBridgeEnv has no overlay) | none (not set in config) | Yes | Official WidowXBridgeEnv does not use rgb_overlay. Our GR00T config omits it. |
 | **control_freq** | 5 Hz (SimplerEnv default) | 5 Hz | Yes | simpler_all_tasks.yaml:29 |
 | **sim_freq** | 500 Hz (SimplerEnv default) | 500 Hz | Yes | simpler_all_tasks.yaml:30 |
 | **domain_id / embodiment_tag** | OXE_WIDOWX | OXE_WIDOWX | Yes | simpler_widowx.yaml:7 `embodiment_tag: OXE_WIDOWX` |
-| **Proprio update (closed-loop)** | fresh state each step (from env obs) | zeros (no state) | MISMATCH | Official sends fresh state every step from env. Ours sends no state; groot.py initializes state to zeros. |
+| **Proprio update (closed-loop)** | fresh state each step (from env obs) | fresh state each step | Yes | **FIXED**: benchmark sends base-relative EE pose every step via `obs["states"]`; groot.py decomposes into per-key arrays for policy. |
 
 ### Discrepancies
 
-1. **No state/proprio sent from SimplerEnv** — CRITICAL
-   - SimplerEnv benchmark has no `send_state` parameter
-   - Official GR00T eval extracts 8D state [x, y, z, roll', pitch', yaw', pad, gripper] with bridge rotation correction (`quat2mat @ default_rot.T`)
-   - Ours sends zero state
-   - Impact: Model receives no proprioceptive feedback, degrading action quality significantly
-   - **FIXED**: Added `send_state` parameter to SimplerEnv benchmark; sends 8D state with bridge rotation correction when `bridge_rotation: true` is set in the model server config
+1. **No state/proprio sent from SimplerEnv** — CRITICAL → **FIXED**
+   - **FIXED**: `send_state=True` via obs_params; benchmark computes base-relative EE pose from `base_pose + tcp_pose` (matching NVIDIA's `youliangtan/ManiSkill2_real2sim` fork). Gripper openness via `get_gripper_closedness()`. Bridge rotation applied in groot.py.
 
-2. **Bridge rotation correction missing** — CRITICAL (dependent on #1)
-   - Official applies `default_rot = [[0,0,1],[0,1,0],[-1,0,0]]` rotation correction to convert ManiSkill2 quat to bridge-convention euler
-   - Even if state were sent, our SimplerEnv benchmark doesn't apply this correction
-   - Impact: Would need custom state processing in SimplerEnv benchmark
-   - **FIXED**: SimplerEnv benchmark applies bridge rotation correction when obs_params includes `bridge_rotation: true`; groot/simpler_widowx.yaml now sets `bridge_rotation: true`
+2. **Bridge rotation correction missing** — CRITICAL → **FIXED**
+   - **FIXED**: groot.py applies `quat_to_matrix(xyzw) @ _BRIDGE_DEFAULT_ROT.T → matrix_to_euler_xyz`. Verified numerically identical to `transforms3d.quat2mat + mat2euler`.
 
-3. **max_episode_steps: 120 vs 10000** — HIGH
-   - Official overrides to 10000 steps (effectively unlimited)
-   - Ours uses 120 steps
-   - Impact: With 120 steps at 5Hz = 24 seconds of robot time, many tasks may not complete. However, the official eval's `done` flag from the env can terminate episodes early, so 10000 is more of "no artificial limit" rather than "needs 10000 steps."
-   - **FIXED**: New `configs/simpler_groot_widowx.yaml` config sets `max_episode_steps: 10000` for all 4 tasks
+3. **max_episode_steps: 120 vs 504** — HIGH → **PARTIALLY FIXED**
+   - Official uses `MultiStepConfig(max_episode_steps=504)`, not 10000. Inner env has 10000 (unlimited). Currently using 300 in benchmark config. **Needs update to 504.**
 
-4. **Gripper polarity uncertain** — MEDIUM
-   - Without `invert_gripper`, GR00T's raw [0,1] output passes through
-   - benchmark.py:202 binarizes at 0.5: >0.5->+1(close in ManiSkill2), <=0.5->-1(open)
-   - If GR00T bridge outputs 0=close, 1=open, then 1(open)->+1(close_in_env) = INVERTED
-   - Impact: Gripper may be inverted; needs `invert_gripper: true` for SimplerEnv or a different gripper mapping
-   - Still needs empirical testing to confirm correct polarity direction
+4. **n_action_steps: 8 vs chunk_size: 16** — HIGH → **NOT FIXED**
+   - Official `MultiStepWrapper` executes first 8 of 16 predicted actions, re-infers every 8 env steps. Ours uses full 16-action chunk, re-infers every 16 steps. This means our model re-observes half as often. **Needs chunk_size=8.**
 
-### Notes
-- The 25% success rate (vs 57.1% reported) with missing state and potentially wrong max_steps suggests the model can partially succeed on pure vision, but state feedback is important for this benchmark.
-- The bridge rotation correction (`default_rot.T` matrix multiplication) is a non-trivial coordinate frame transform that would need to be implemented either in the benchmark or model server.
-- The `invert_gripper` question needs empirical testing: if GR00T bridge outputs match SimplerEnv convention directly, no inversion is needed; if they follow the RLDS convention (0=close, 1=open), inversion IS needed.
+5. **accumulate_success** — MEDIUM → **FIXED**
+   - **FIXED**: `accumulate_success=True` in GR00T obs_params; benchmark OR-accumulates success across episode. PutSpoon improved from 45.8% to 70.8%.
+
+6. **Gripper polarity** — Resolved empirically
+   - GR00T bridge outputs [0,1] where >0.5=open. `2*(x>0.5)-1`: open→+1, close→-1. ManiSkill2 WidowX: +1=open, -1=close. Matches. No `invert_gripper` needed.
+
+### Remaining gaps
+- **n_action_steps=8** (chunk_size should be 8, not 16) — re-inference frequency mismatch
+- **max_episode_steps=504** (currently 300) — episode too short
+- PutEggplant 4.2% vs 93% — sink camera env may need different visual setup
+- Overall 30.2% vs 62.1% — above two items are primary suspects
 
 ---
 
