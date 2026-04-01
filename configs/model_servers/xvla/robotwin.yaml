@@ -1,5 +1,4 @@
 # X-VLA model server — RoboTwin 2.0
-# Usage: vla-eval serve --config configs/model_servers/xvla/robotwin.yaml
 extends: _base.yaml
 args:
   model_path: "2toINF/X-VLA-WidowX"
