@@ -23,7 +23,7 @@ Pitfalls identified during systematic pipeline verification of 5+ VLA codebases 
 | | Unnorm stat keys (min/max vs q99) | 0%→functional | starVLA LIBERO |
 | | chunk_size mismatch | 0-30pp | GR00T: 16→1 for SimplerEnv |
 | **Episodes** | max_steps too low | 0% | X-VLA: 120 vs 1200 needed |
-| | Wrong termination logic | Inflated scores | terminated vs truncated |
+| | **No standard termination semantics** | **Scores not comparable** | truncation vs accumulate |
 | | Random vs deterministic placement | 40pp+ | GR00T eggplant: 50% vs 4% |
 | **Environment** | Internal fork differences | 0-80pp | NVIDIA eef_pos, X-VLA absolute EE |
 
@@ -105,9 +105,13 @@ Pitfalls identified during systematic pipeline verification of 5+ VLA codebases 
 **max_episode_steps**
 - X-VLA SimplerEnv: 0% with 120 steps, functional with 1200. Always match the official eval's budget.
 
-**Termination semantics**
-- SimplerEnv `terminated=True` is transient. End episodes on `truncated=True`. Ending on `terminated` inflates scores (DB-CogACT stack: 75%→29%).
-- Some models (GR00T) need OR-accumulation: success if `terminated=True` at any point.
+**Termination semantics (cross-model comparability warning)**
+- SimplerEnv has no standard success protocol. Two semantics are used on the **same** tasks:
+  - **truncation**: run to max steps, success = `done` on the final step. Used by most models (starVLA, X-VLA, DB-CogACT — via the standard `maniskill2_evaluator.py`).
+  - **accumulate**: run to max steps, success if `done=True` at **any** point during the episode. Used by GR00T (via `current_successes[env_idx] |= bool(env_success)` in vectorized rollout).
+- The difference matters for tasks with **unstable success** — e.g., stacking a cube that can topple. A robot that stacks the cube at step 80 but knocks it off by step 120 scores 0% under truncation but 100% under accumulate. For stable placements (eggplant in deep basket), both give the same result.
+- Impact: DB-CogACT Stack: 75% (accumulate) → 29% (truncation). **Published SimplerEnv scores across models are not directly comparable** unless the termination semantics match.
+- This is an ecosystem-level issue: SimplerEnv itself does not prescribe a standard, and each codebase uses its own evaluation loop.
 
 **Random vs deterministic episode placement**
 - GR00T eggplant: 50% with deterministic placement vs 4% with random. Match the official protocol and use enough episodes (200+) for random.
