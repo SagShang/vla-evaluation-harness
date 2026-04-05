@@ -103,7 +103,13 @@ class Orchestrator:
 
         # Connect to model server FIRST to get observation requirements
         conn = Connection(self._server_cfg.url, timeout=self._server_cfg.timeout)
-        await conn.connect(benchmark=cfg.benchmark)
+        try:
+            await conn.connect(benchmark=cfg.benchmark)
+        except Exception:
+            if self._output_file_lock is not None:
+                self._output_file_lock.release()
+                self._output_file_lock = None
+            raise
 
         # Resolve benchmark class and inspect its __init__ signature once
         benchmark_cls = resolve_import_string(cfg.benchmark)
@@ -122,6 +128,9 @@ class Orchestrator:
         try:
             benchmark = benchmark_cls(**merged_params)
         except Exception:
+            if self._output_file_lock is not None:
+                self._output_file_lock.release()
+                self._output_file_lock = None
             await conn.close()
             raise
 
