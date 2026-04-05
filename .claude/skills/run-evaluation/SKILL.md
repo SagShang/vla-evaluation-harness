@@ -49,12 +49,26 @@ vla-eval serve -c configs/model_servers/<model>.yaml
 ```
 Wait for the `"Model ready, starting server on ws://..."` log before proceeding.
 
+**Remote serving via slurm** (when model needs GPUs on a different node):
+```bash
+srun --gres=gpu:1 --job-name=model-serve \
+  bash -c "uv run vla-eval serve -c configs/model_servers/<model>.yaml" &
+```
+Check the allocated node with `squeue`, verify with `curl -s http://<node>:8000/config`, then use `--server-url ws://<node>:8000` for benchmark runs. Cancel with `scancel` when done.
+
 **Terminal 2 — run the benchmark:**
 ```bash
 vla-eval run -c configs/<benchmark>.yaml
 ```
 
+When the model server is on a remote node, use `--server-url` to override:
+```bash
+vla-eval run -c configs/<benchmark>.yaml --server-url ws://<slurm-node>:8000
+```
+
 This pulls the Docker image if needed, launches the container with `--network host`, runs all episodes, and saves results to `output_dir` (default `./results/`).
+
+**`--dev` mode**: If you changed code in `src/` since the Docker image was last built, add `--dev` to bind-mount local source into the container. Without it, the container runs stale code.
 
 Add `-v` to either command for debug logging.
 
@@ -98,23 +112,29 @@ Missing shards are allowed — the merged result is marked partial.
 Results are JSON in `output_dir`. Structure:
 ```json
 {
-  "benchmark": "LIBEROBenchmark",
-  "overall_success_rate": 0.72,
+  "benchmark": "LIBEROBenchmark_libero_spatial",
+  "mean_success": 0.968,
   "tasks": [
     {
       "task": "pick_up_the_black_bowl...",
-      "success_rate": 0.80,
-      "avg_steps": 145.2,
-      "episodes": [{"episode_id": "...", "success": true, "steps": 130, "elapsed_sec": 12.34}]
+      "mean_success": 0.96,
+      "num_episodes": 50,
+      "avg_steps": 95.2,
+      "episodes": [
+        {"episode_id": 0, "metrics": {"success": true}, "steps": 78, "elapsed_sec": 12.34},
+        {"episode_id": 1, "metrics": {"success": false}, "steps": 220, "failure_reason": "timeout", "failure_detail": "..."}
+      ]
     }
   ]
 }
 ```
 
 Key metrics:
-- **`overall_success_rate`** — primary metric (fraction of successful episodes)
-- **Per-task `success_rate`** — breakdown by task
+- **`mean_success`** — primary metric (fraction of successful episodes, all episodes count)
+- **Per-task `mean_success`** — breakdown by task
 - **`avg_steps`** — efficiency (lower = better)
+- **`num_errors`** — present on tasks that had episodes with `failure_reason` (connection errors, exceptions, etc.)
+- **`failure_reason` / `failure_detail`** — per-episode diagnostic fields for debugging failures
 
 ## 7. Advanced options
 
@@ -126,9 +146,34 @@ Key metrics:
 | Skip Docker prompt | `--yes` | Non-interactive image pull |
 | Custom overrides | Edit config YAML | `episodes_per_task`, `max_steps`, `max_tasks`, `params.seed`, `server.timeout` |
 
+## Custom output directory
+
+Override `output_dir` with `--output-dir`:
+```bash
+vla-eval run -c configs/libero_spatial.yaml --output-dir results/my-experiment/
+```
+Default is `./results/` (from config YAML). The CLI flag takes precedence over the config value.
+
 ## Parallel evaluations of different models
 
 Shard result files are named by benchmark + shard count. If two evals share the same benchmark config, shard count, and output directory, a file lock prevents silent overwrites. Use different `output_dir` values or different shard counts to avoid collisions.
+
+## Monitoring shard progress
+
+With many shards running, check progress via log files:
+```bash
+# Count completed episodes per shard
+for i in $(seq 0 $((NUM_SHARDS - 1))); do
+  eps=$(grep -c "SUCCESS\|FAIL" results/shard_${i}.log 2>/dev/null || echo 0)
+  echo "Shard $i: $eps episodes"
+done
+
+# Check for errors
+grep -rh "ERROR\|exception" results/shard_*.log | head -10
+
+# Count finished shard JSON files
+find results/ -name '*shard*of*.json' | wc -l
+```
 
 ## Troubleshooting
 
