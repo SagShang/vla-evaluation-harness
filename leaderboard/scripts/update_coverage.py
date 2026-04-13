@@ -41,8 +41,7 @@ def fetch_citation_counts(arxiv_id: str, limit: int = 1000) -> tuple[int, int] |
     """Paginate /citations for one benchmark paper.
 
     Returns (total_citing, arxiv_citing). None on persistent failure.
-    Total counts every citation; arxiv-only counts those whose `externalIds`
-    carry an ArXiv entry.
+    `arxiv_citing` = citing papers whose `externalIds` carry an ArXiv entry.
     """
     headers = {"Accept": "application/json", "User-Agent": "VLA-Leaderboard/1.0"}
     api_key = os.environ.get("SEMANTIC_SCHOLAR_API_KEY")
@@ -50,7 +49,7 @@ def fetch_citation_counts(arxiv_id: str, limit: int = 1000) -> tuple[int, int] |
         headers["x-api-key"] = api_key
 
     total = 0
-    arxiv_only = 0
+    arxiv_citing = 0
     offset = 0
     while True:
         url = f"{S2_CITATIONS_URL.format(arxiv_id=arxiv_id)}?fields=externalIds&limit={limit}&offset={offset}"
@@ -79,12 +78,12 @@ def fetch_citation_counts(arxiv_id: str, limit: int = 1000) -> tuple[int, int] |
             total += 1
             ext = (item.get("citingPaper") or {}).get("externalIds") or {}
             if ext.get("ArXiv"):
-                arxiv_only += 1
+                arxiv_citing += 1
         if data.get("next") is None:
             break
         offset = data["next"]
         time.sleep(1)
-    return total, arxiv_only
+    return total, arxiv_citing
 
 
 def load_cached_coverage() -> dict:
@@ -126,8 +125,8 @@ def main():
             result = fetch_citation_counts(aid)
             if result is not None:
                 fetched[bm_key] = result
-                total, arxiv_only = result
-                print(f"  {bm_key}: total={total} arxiv={arxiv_only}")
+                total, arxiv_citing = result
+                print(f"  {bm_key}: total={total} arxiv={arxiv_citing}")
 
     coverage = {
         "last_updated": date.today().isoformat() if (args.fetch and fetched) else cached.get("last_updated"),
