@@ -1,0 +1,14 @@
+# π₀.5 LIBERO LoRA model server via local OpenPI checkout
+# Works for both JAX and PyTorch OpenPI checkpoints. Pass the checkpoint with:
+#   vla-eval serve -c configs/model_servers/pi0_local/libero_lora.yaml --arg checkpoint=/path/to/checkpoint
+
+script: "src/vla_eval/model_servers/pi0_local.py"
+args:
+  config_name: pi05_libero_lora
+  image_key: "observation/image"
+  wrist_image_key: "observation/wrist_image"
+  state_key: "observation/state"
+  state_dim: 8
+  image_resolution: 224
+  chunk_size: 10
+  port: 8000
